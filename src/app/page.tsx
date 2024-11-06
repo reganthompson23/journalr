@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronUpIcon } from '@heroicons/react/24/solid';
+import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 import TodoList from './components/TodoList';
+import { format } from 'date-fns';
 
 interface JournalEntry {
   id: string;
@@ -16,6 +17,7 @@ export default function JournalPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showEntries, setShowEntries] = useState(false);
 
   // Fetch entries when page loads
   useEffect(() => {
@@ -172,23 +174,35 @@ export default function JournalPage() {
 
         {/* Entry list */}
         <div className="mt-6 space-y-4">
-          {entries.map((entry) => (
-            <div
-              key={entry.id}
-              onClick={() => handleEntryClick(entry)}
-              className="p-4 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50"
-            >
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 w-24">
-                  {new Date(entry.date).toLocaleDateString()}
-                </span>
-                <span className="text-gray-600 flex-1">
-                  {entry.content.substring(0, 50)}
-                  {entry.content.length > 50 ? '...' : ''}
-                </span>
+          <button
+            onClick={() => setShowEntries(!showEntries)}
+            className="w-full p-4 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50 mb-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1" /> {/* Empty div for spacing */}
+              <div>Entries</div>
+              <div className="flex-1 flex justify-end">
+                {showEntries ? (
+                  <ChevronUpIcon className="h-4 w-4" />
+                ) : (
+                  <ChevronDownIcon className="h-4 w-4" />
+                )}
               </div>
             </div>
-          ))}
+          </button>
+
+          {showEntries && (
+            <div className="space-y-4">
+              {entries.slice(0, 10).map((entry) => (
+                <div key={entry.id} className="p-4 rounded-lg border">
+                  <div className="flex items-center space-x-4 text-gray-500">
+                    <div>{format(new Date(entry.date), 'MM/dd/yyyy')}</div>
+                    <div>{entry.content}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
