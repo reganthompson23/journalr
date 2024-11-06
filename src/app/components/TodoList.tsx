@@ -24,55 +24,6 @@ interface Todo {
   order: number;
 }
 
-function SortableItem({ todo, onToggle, onDelete }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: todo.id });
-
-  const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-move"
-    >
-      <span className={`flex-1 text-gray-600 ${todo.completed ? 'line-through text-gray-400' : ''}`}>
-        {todo.content}
-      </span>
-      <div className="flex space-x-2">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle(todo.id, !todo.completed);
-          }}
-          className="text-gray-400 hover:text-gray-600"
-        >
-          <MinusIcon className="h-4 w-4" />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(todo.id);
-          }}
-          className="text-gray-400 hover:text-gray-600"
-        >
-          <XMarkIcon className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function TodoList() {
   const [isOpen, setIsOpen] = useState(false);
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -134,28 +85,46 @@ export default function TodoList() {
   };
 
   const toggleComplete = async (id: string, completed: boolean) => {
+    console.log('Toggling todo:', id, 'to', completed);
     try {
-      await fetch('/api/todos', {
+      const response = await fetch('/api/todos', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, completed }),
       });
-      setTodos(todos.map(todo => 
-        todo.id === id ? { ...todo, completed } : todo
-      ));
+      
+      if (!response.ok) {
+        console.error('Server response not ok:', await response.text());
+        throw new Error('Failed to update todo');
+      }
+      
+      const updatedTodo = await response.json();
+      console.log('Server response:', updatedTodo);
+      
+      setTodos(prevTodos => 
+        prevTodos.map(todo => 
+          todo.id === id ? { ...todo, completed } : todo
+        )
+      );
     } catch (error) {
       console.error('Failed to update todo:', error);
     }
   };
 
   const deleteTodo = async (id: string) => {
+    console.log('Deleting todo:', id);
     try {
       const response = await fetch(`/api/todos?id=${id}`, {
         method: 'DELETE',
       });
-      if (response.ok) {
-        setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
+      
+      if (!response.ok) {
+        console.error('Server response not ok:', await response.text());
+        throw new Error('Failed to delete todo');
       }
+      
+      console.log('Delete successful');
+      setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
     } catch (error) {
       console.error('Failed to delete todo:', error);
     }
@@ -252,6 +221,53 @@ export default function TodoList() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function SortableItem({ todo, onToggle, onDelete }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: todo.id });
+
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+    >
+      {/* Drag handle - changed from ⋮ to = */}
+      <div {...attributes} {...listeners} className="cursor-move px-2 text-gray-400 hover:text-gray-600">
+        =
+      </div>
+
+      <span className={`flex-1 text-gray-600 pl-4 ${todo.completed ? 'line-through text-gray-400' : ''}`}>
+        {todo.content}
+      </span>
+
+      <div className="flex space-x-2">
+        <button
+          onClick={() => onToggle(todo.id, !todo.completed)}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <MinusIcon className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => onDelete(todo.id)}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <XMarkIcon className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }
