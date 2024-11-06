@@ -17,3 +17,12 @@ model JournalEntry {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
+
+model Todo {
+    id          String   @id @default(cuid())
+    content     String
+    completed   Boolean  @default(false)
+    order       Int      // for drag-and-drop ordering
+    createdAt   DateTime @default(now())
+    userId      String   // to link with your auth system
+}

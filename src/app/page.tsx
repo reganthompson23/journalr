@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { ChevronUpIcon } from '@heroicons/react/24/solid';
+import TodoList from './components/TodoList';
 
 interface JournalEntry {
   id: string;
@@ -13,6 +15,7 @@ export default function JournalPage() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [isExpanded, setIsExpanded] = useState(true);
 
   // Fetch entries when page loads
   useEffect(() => {
@@ -47,6 +50,7 @@ export default function JournalPage() {
     setContent(entry.content)
     setDate(new Date(entry.date).toISOString().split('T')[0])
     setSelectedId(entry.id)
+    setIsExpanded(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -122,47 +126,71 @@ export default function JournalPage() {
     return () => clearTimeout(saveTimeout)
   }, [content])  // Only watch for content changes, not date
 
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   return (
-    <main className="max-w-2xl mx-auto p-4">
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">Journal Entry</h1>
-          <input
-            type="date"
+          <h1 className="text-3xl font-bold">Journal Entry</h1>
+          <input 
+            type="date" 
             value={date}
             onChange={(e) => handleDateChange(e.target.value)}
-            className="border rounded p-2 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:border-gray-700"
+            className="p-2 rounded border focus:outline-none" 
           />
         </div>
-        
-        <textarea
-          className="w-full h-64 p-4 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-gray-700 focus:border-gray-700"
-          placeholder="Write your thoughts for today..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-        />
-      </div>
 
-      <div className="space-y-3">
-        {entries.map((entry) => (
-          <div 
-            key={entry.id} 
-            className={`bg-white rounded-lg shadow-lg p-3 relative cursor-pointer 
-              hover:shadow-xl transition-shadow h-12
-              ${selectedId === entry.id ? 'ring-2 ring-gray-700' : ''}`}
-            onClick={() => handleEntryClick(entry)}
-          >
-            <div className="flex items-center">
-              <div className="text-sm text-gray-500 w-24">
-                {new Date(entry.date).toLocaleDateString('en-GB')}
-              </div>
-              <div className="whitespace-pre-wrap overflow-hidden text-ellipsis line-clamp-1 text-gray-500">
-                {entry.content}
+        {/* Collapsible textarea section */}
+        <div className={`transition-all duration-300 ease-in-out ${
+          isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+        }`}>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full h-64 p-4 border rounded-lg resize-none focus:outline-none"
+            placeholder="Today's entry..."
+          />
+        </div>
+
+        <button 
+          onClick={toggleExpand}
+          className="w-full flex justify-center mt-2 p-2 hover:bg-gray-50 transition-colors"
+        >
+          <ChevronUpIcon 
+            className={`h-5 w-5 text-gray-500 transition-transform duration-300 ${
+              isExpanded ? '' : 'rotate-180'
+            }`}
+          />
+        </button>
+
+        <div className="mt-4">
+          <TodoList />
+        </div>
+
+        {/* Entry list */}
+        <div className="mt-6 space-y-4">
+          {entries.map((entry) => (
+            <div
+              key={entry.id}
+              onClick={() => handleEntryClick(entry)}
+              className="p-4 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50"
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 w-24">
+                  {new Date(entry.date).toLocaleDateString()}
+                </span>
+                <span className="text-gray-600 flex-1">
+                  {entry.content.substring(0, 50)}
+                  {entry.content.length > 50 ? '...' : ''}
+                </span>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </main>
+    </div>
   )
 } 
