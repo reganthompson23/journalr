@@ -166,7 +166,7 @@ export default function TodoList() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-4 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50 mb-4"
+        className="w-full p-4 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50"
       >
         <div className="flex items-center justify-between">
           <div className="flex-1" /> {/* Empty div for spacing */}
@@ -182,22 +182,17 @@ export default function TodoList() {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 bg-white rounded-lg border shadow-lg z-10">
-          <div className="p-4" 
-               style={{ 
-                 maxHeight: 'calc(100vh - 300px)', // Reduced height to ensure space
-                 overflowY: 'auto',
-                 paddingBottom: '24px' // Add padding at bottom of scrollable area
-               }}>
+        <div className="absolute left-0 right-0 -mt-1 bg-white rounded-lg border shadow-lg z-10">
+          <div className="p-4" style={{ 
+            maxHeight: 'calc(100vh - 300px)', 
+            overflowY: 'auto'
+          }}>
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
             >
-              <SortableContext
-                items={todos}
-                strategy={verticalListSortingStrategy}
-              >
+              <SortableContext items={todos} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
                   {todos.map((todo) => (
                     <SortableItem
@@ -231,7 +226,6 @@ export default function TodoList() {
               </button>
             )}
           </div>
-          <div className="h-6" /> {/* Force 24px space at bottom */}
         </div>
       )}
     </div>
