@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
-import { ChevronUpIcon, PlusIcon, MinusIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { ChevronUpIcon, PlusIcon, MinusIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 import {
   DndContext,
   closestCenter,
@@ -29,12 +29,10 @@ export default function TodoList() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchTodos();
-    document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
@@ -170,55 +168,70 @@ export default function TodoList() {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full p-4 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50 mb-4"
       >
-        Memory
+        <div className="flex items-center justify-between">
+          <div className="flex-1" /> {/* Empty div for spacing */}
+          <div>To do</div>
+          <div className="flex-1 flex justify-end">
+            {isOpen ? (
+              <ChevronUpIcon className="h-4 w-4" />
+            ) : (
+              <ChevronDownIcon className="h-4 w-4" />
+            )}
+          </div>
+        </div>
       </button>
 
       {isOpen && (
-        <div
-          ref={popoverRef}
-          className="absolute left-0 right-0 mt-2 p-4 bg-white rounded-lg border shadow-lg z-10"
-        >
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={todos}
-              strategy={verticalListSortingStrategy}
+        <div className="absolute left-0 right-0 mt-2 bg-white rounded-lg border shadow-lg z-10">
+          <div className="p-4" 
+               style={{ 
+                 maxHeight: 'calc(100vh - 300px)', // Reduced height to ensure space
+                 overflowY: 'auto',
+                 paddingBottom: '24px' // Add padding at bottom of scrollable area
+               }}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              <div className="space-y-2">
-                {todos.map((todo) => (
-                  <SortableItem
-                    key={todo.id}
-                    todo={todo}
-                    onToggle={toggleComplete}
-                    onDelete={deleteTodo}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+              <SortableContext
+                items={todos}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {todos.map((todo) => (
+                    <SortableItem
+                      key={todo.id}
+                      todo={todo}
+                      onToggle={toggleComplete}
+                      onDelete={deleteTodo}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
 
-          {isAdding ? (
-            <input
-              ref={inputRef}
-              type="text"
-              value={newTodo}
-              onChange={(e) => setNewTodo(e.target.value)}
-              onKeyDown={addTodo}
-              className="mt-4 w-full p-2 border rounded text-gray-600 focus:outline-none"
-              placeholder="Add new todo..."
-              autoFocus
-            />
-          ) : (
-            <button
-              onClick={() => setIsAdding(true)}
-              className="mt-4 w-full flex justify-center items-center p-2 text-gray-400 hover:text-gray-600"
-            >
-              <PlusIcon className="h-5 w-5" />
-            </button>
-          )}
+            {isAdding ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={newTodo}
+                onChange={(e) => setNewTodo(e.target.value)}
+                onKeyDown={addTodo}
+                className="mt-4 w-full p-2 border rounded text-gray-600 focus:outline-none"
+                placeholder="Add new todo..."
+                autoFocus
+              />
+            ) : (
+              <button
+                onClick={() => setIsAdding(true)}
+                className="mt-4 w-full flex justify-center items-center p-2 text-gray-400 hover:text-gray-600"
+              >
+                <PlusIcon className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+          <div className="h-6" /> {/* Force 24px space at bottom */}
         </div>
       )}
     </div>

@@ -133,7 +133,7 @@ export default function JournalPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <main className="container mx-auto p-4 pb-6 max-w-2xl">
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl font-bold">Journal Entry</h1>
@@ -205,6 +205,6 @@ export default function JournalPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   )
 } 
