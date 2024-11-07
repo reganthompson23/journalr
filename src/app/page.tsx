@@ -152,7 +152,7 @@ export default function JournalPage() {
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full h-64 p-4 border rounded-lg resize-none focus:outline-none"
+            className="w-full h-[400px] p-4 border rounded-lg resize-none focus:outline-none"
             placeholder="Today's entry..."
           />
         </div>

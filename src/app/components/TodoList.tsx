@@ -30,10 +30,22 @@ export default function TodoList() {
   const [newTodo, setNewTodo] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [journalHeight, setJournalHeight] = useState(0);
 
   useEffect(() => {
     fetchTodos();
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const journalElement = document.querySelector('.journal-entry-section');
+    if (journalElement) {
+      const observer = new ResizeObserver((entries) => {
+        setJournalHeight(entries[0].contentRect.height);
+      });
+      observer.observe(journalElement);
+      return () => observer.disconnect();
+    }
   }, []);
 
   const fetchTodos = async () => {
@@ -182,11 +194,31 @@ export default function TodoList() {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 -mt-1 bg-white rounded-lg border shadow-lg z-10">
+        <div className="absolute left-0 right-0 mt-0 bg-white rounded-lg border shadow-lg z-10">
           <div className="p-4" style={{ 
-            maxHeight: 'calc(100vh - 300px)', 
+            maxHeight: 'calc(100vh - 324px)',
             overflowY: 'auto'
           }}>
+            {isAdding ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={newTodo}
+                onChange={(e) => setNewTodo(e.target.value)}
+                onKeyDown={addTodo}
+                className="w-full p-2 border rounded text-gray-600 focus:outline-none mb-4"
+                placeholder="Add new todo..."
+                autoFocus
+              />
+            ) : (
+              <button
+                onClick={() => setIsAdding(true)}
+                className="w-full flex justify-center items-center p-2 text-gray-400 hover:text-gray-600 mb-4"
+              >
+                <PlusIcon className="h-5 w-5" />
+              </button>
+            )}
+
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -205,27 +237,8 @@ export default function TodoList() {
                 </div>
               </SortableContext>
             </DndContext>
-
-            {isAdding ? (
-              <input
-                ref={inputRef}
-                type="text"
-                value={newTodo}
-                onChange={(e) => setNewTodo(e.target.value)}
-                onKeyDown={addTodo}
-                className="mt-4 w-full p-2 border rounded text-gray-600 focus:outline-none"
-                placeholder="Add new todo..."
-                autoFocus
-              />
-            ) : (
-              <button
-                onClick={() => setIsAdding(true)}
-                className="mt-4 w-full flex justify-center items-center p-2 text-gray-400 hover:text-gray-600"
-              >
-                <PlusIcon className="h-5 w-5" />
-              </button>
-            )}
           </div>
+          <div className="h-6" />
         </div>
       )}
     </div>
