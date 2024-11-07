@@ -133,7 +133,7 @@ export default function JournalPage() {
   };
 
   return (
-    <main className="container mx-auto p-4 pb-10 max-w-5xl min-h-screen">
+    <main className="container mx-auto px-4 pt-4 pb-2 max-w-5xl">
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl font-bold">Journal Entry</h1>
