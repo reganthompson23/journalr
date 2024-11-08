@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react'
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 import TodoList from './components/TodoList';
 import { format, subDays } from 'date-fns';
+import { supabase } from '../lib/supabase';  // Changed this line
+
+// Test Supabase connection
+console.log('Supabase client:', supabase);
 
 interface JournalEntry {
   id: string;
