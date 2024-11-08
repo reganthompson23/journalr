@@ -283,15 +283,19 @@ export default function JournalPage() {
           </button>
 
           {showEntries && (
-            <div className="space-y-4">
-              {entries.slice(0, 10).map((entry) => (
-  <div key={entry.id} className="p-4 rounded-lg border">
-    <div className="flex items-center space-x-4 text-gray-500">
-      <div>{format(new Date(entry.date), 'dd/MM/yy')}</div>  {/* Changed format */}
-      <div>{entry.content}</div>
-    </div>
-  </div>
-))}
+  <div className="space-y-4">
+    {entries.slice(0, 7).map((entry) => (
+      <div 
+        key={entry.id} 
+        className="p-4 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={() => handleEntryClick(entry)}
+      >
+        <div className="flex items-center space-x-4 text-gray-500">
+          <div>{format(new Date(entry.date), 'dd/MM/yy')}</div>
+          <div className="truncate whitespace-nowrap overflow-hidden">{entry.content}</div>
+        </div>
+      </div>
+    ))}
             </div>
           )}
         </div>
