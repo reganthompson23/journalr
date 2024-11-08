@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 import TodoList from './components/TodoList';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 interface JournalEntry {
   id: string;
@@ -18,6 +18,8 @@ export default function JournalPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(true);
   const [showEntries, setShowEntries] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
 
   // Fetch entries when page loads
   useEffect(() => {
@@ -117,6 +119,66 @@ export default function JournalPage() {
     }
   }
 
+  const handleAISummary = async (timeframe: 'yesterday' | 'lastWeek') => {
+    setIsLoadingAI(true);
+    setAiSummary(null);
+    
+    try {
+      const today = new Date();
+      const startDate = timeframe === 'yesterday' 
+        ? subDays(today, 1)
+        : subDays(today, 7);
+      
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const todayStr = today.toISOString().split('T')[0];
+      
+      console.log('Today:', todayStr);
+      console.log('Start date:', startDateStr);
+      
+      const relevantEntries = entries.filter(entry => {
+        const entryDateStr = new Date(entry.date).toISOString().split('T')[0];
+        const isRelevant = entryDateStr >= startDateStr && entryDateStr < todayStr;
+        console.log('Checking entry:', {
+          date: entry.date,
+          entryDateStr,
+          isRelevant,
+          content: entry.content  // Add this to debug
+        });
+        return isRelevant;
+      });
+
+      console.log('Found relevant entries:', relevantEntries);
+
+      if (!relevantEntries || relevantEntries.length === 0) {
+        setAiSummary('No entries found for this timeframe.');
+        setIsLoadingAI(false);
+        return;
+      }
+
+      // Continue with API call only if we have entries
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          entries: relevantEntries,
+          timeframe: timeframe === 'yesterday' ? 'yesterday' : 'the last week'
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to get AI summary');
+      
+      const data = await response.json();
+      setAiSummary(data.summary);
+    } catch (error) {
+      console.error('Failed to get AI summary:', error);
+      setAiSummary('Failed to generate summary. Please try again.');
+    } finally {
+      setIsLoadingAI(false);
+    }
+};
+
   // Auto-save when content changes
   useEffect(() => {
     const saveTimeout = setTimeout(() => {
@@ -136,7 +198,25 @@ export default function JournalPage() {
     <main className="container mx-auto px-4 pt-4 pb-2 max-w-5xl">
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-bold">Journal Entry</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-bold">Journal Entry</h1>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => handleAISummary('yesterday')}
+                className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                disabled={isLoadingAI}
+              >
+                Yesterday
+              </button>
+              <button 
+                onClick={() => handleAISummary('lastWeek')}
+                className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                disabled={isLoadingAI}
+              >
+                Last Week
+              </button>
+            </div>
+          </div>
           <input 
             type="date" 
             value={date}
@@ -144,6 +224,17 @@ export default function JournalPage() {
             className="p-2 rounded border focus:outline-none" 
           />
         </div>
+
+        {/* AI Summary display */}
+        {(isLoadingAI || aiSummary) && (
+          <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+            {isLoadingAI ? (
+              <div className="text-gray-500">Generating summary...</div>
+            ) : (
+              <div className="text-gray-600">{aiSummary}</div>
+            )}
+          </div>
+        )}
 
         {/* Collapsible textarea section */}
         <div className={`transition-all duration-300 ease-in-out ${
@@ -194,17 +285,17 @@ export default function JournalPage() {
           {showEntries && (
             <div className="space-y-4">
               {entries.slice(0, 10).map((entry) => (
-                <div key={entry.id} className="p-4 rounded-lg border">
-                  <div className="flex items-center space-x-4 text-gray-500">
-                    <div>{format(new Date(entry.date), 'MM/dd/yyyy')}</div>
-                    <div>{entry.content}</div>
-                  </div>
-                </div>
-              ))}
+  <div key={entry.id} className="p-4 rounded-lg border">
+    <div className="flex items-center space-x-4 text-gray-500">
+      <div>{format(new Date(entry.date), 'dd/MM/yy')}</div>  {/* Changed format */}
+      <div>{entry.content}</div>
+    </div>
+  </div>
+))}
             </div>
           )}
         </div>
       </div>
     </main>
   )
-} 
+}
