@@ -1,16 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase/client'
+import { useAuth } from '../../context/AuthContext'
 
 export default function AuthForm() {
   const router = useRouter()
+  const { user } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      router.push('/')
+    }
+  }, [user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,27 +28,25 @@ export default function AuthForm() {
 
     try {
       if (mode === 'signup') {
-        const { error, data } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
         })
-        if (error) throw error
-        if (data.user) {
-          console.log('Signup successful:', data.user)
-          router.push('/')
-        }
+        if (signUpError) throw signUpError
+        setError('Check your email for the confirmation link!')
       } else {
-        const { error, data } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
-        if (error) throw error
-        if (data.user) {
-          console.log('Login successful:', data.user)
-          router.push('/')
-        }
+        if (signInError) throw signInError
+        router.push('/')
       }
     } catch (err) {
+      console.error('Auth error:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setIsLoading(false)
@@ -53,7 +60,11 @@ export default function AuthForm() {
       </h2>
       
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        <div className={`mb-4 p-3 rounded ${
+          error.includes('Check your email') 
+            ? 'bg-green-100 text-green-700' 
+            : 'bg-red-100 text-red-700'
+        }`}>
           {error}
         </div>
       )}

@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 import TodoList from './components/TodoList';
 import { format, subDays } from 'date-fns';
-import { supabase } from '../lib/supabase';  // Changed this line
+import { supabase } from '../lib/supabase/client'; 
+import { useAuth } from '../context/AuthContext'
+import { useRouter } from 'next/navigation'  // Added this
 
-// Test Supabase connection
 console.log('Supabase client:', supabase);
 
 interface JournalEntry {
@@ -16,6 +17,8 @@ interface JournalEntry {
 }
 
 export default function JournalPage() {
+  const router = useRouter()  // Added this
+  const { user } = useAuth()
   const [content, setContent] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [entries, setEntries] = useState<JournalEntry[]>([])
@@ -25,10 +28,18 @@ export default function JournalPage() {
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
 
-  // Fetch entries when page loads
   useEffect(() => {
     fetchEntries()
   }, [])
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut()
+      router.push('/auth')  // Added this
+    } catch (error) {
+      console.error('Error logging out:', error)
+    }
+  }
 
   const fetchEntries = async () => {
     try {
@@ -37,7 +48,6 @@ export default function JournalPage() {
       const data = await response.json()
       setEntries(data)
       
-      // If no entry is selected, select today's entry if it exists
       if (!selectedId) {
         const today = new Date().toISOString().split('T')[0]
         const todayEntry = data.find(entry => 
@@ -65,12 +75,10 @@ export default function JournalPage() {
   const handleDateChange = async (newDate: string) => {
     console.log('Date changing to:', newDate)
     
-    // Immediately update UI
     setDate(newDate)
     setContent('')
     setSelectedId(null)
     
-    // Find if there's an existing entry for this date
     const existingEntry = entries.find(entry => {
       const entryDate = new Date(entry.date).toISOString().split('T')[0]
       console.log('Comparing:', entryDate, newDate)
@@ -99,7 +107,6 @@ export default function JournalPage() {
 
       if (!response.ok) throw new Error('Failed to save')
       
-      // Instead of fetching all entries, just update the current one in state
       const savedEntry = await response.json()
       setEntries(prevEntries => {
         const index = prevEntries.findIndex(e => 
@@ -107,12 +114,10 @@ export default function JournalPage() {
         )
         
         if (index >= 0) {
-          // Update existing entry
           const newEntries = [...prevEntries]
           newEntries[index] = savedEntry
           return newEntries
         } else {
-          // Add new entry
           return [...prevEntries, savedEntry].sort((a, b) => 
             new Date(b.date).getTime() - new Date(a.date).getTime()
           )
@@ -146,7 +151,7 @@ export default function JournalPage() {
           date: entry.date,
           entryDateStr,
           isRelevant,
-          content: entry.content  // Add this to debug
+          content: entry.content
         });
         return isRelevant;
       });
@@ -159,7 +164,6 @@ export default function JournalPage() {
         return;
       }
 
-      // Continue with API call only if we have entries
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: {
@@ -181,18 +185,17 @@ export default function JournalPage() {
     } finally {
       setIsLoadingAI(false);
     }
-};
+  };
 
-  // Auto-save when content changes
   useEffect(() => {
     const saveTimeout = setTimeout(() => {
-      if (content !== '') {  // Only save if there's actual content
+      if (content !== '') {
         handleSave()
       }
     }, 1000)
 
     return () => clearTimeout(saveTimeout)
-  }, [content])  // Only watch for content changes, not date
+  }, [content])
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -201,35 +204,42 @@ export default function JournalPage() {
   return (
     <main className="container mx-auto px-4 pt-4 pb-2 max-w-5xl">
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold">Journal Entry</h1>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => handleAISummary('yesterday')}
-                className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-                disabled={isLoadingAI}
-              >
-                Yesterday
-              </button>
-              <button 
-                onClick={() => handleAISummary('lastWeek')}
-                className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-                disabled={isLoadingAI}
-              >
-                Last Week
-              </button>
-            </div>
-          </div>
-          <input 
-            type="date" 
-            value={date}
-            onChange={(e) => handleDateChange(e.target.value)}
-            className="p-2 rounded border focus:outline-none" 
-          />
-        </div>
+      <div className="flex justify-between items-center mb-4">
+  <div className="flex items-center gap-4">
+    <h1 className="text-3xl font-bold">Journal Entry</h1>
+    <div className="flex gap-2">
+      <button 
+        onClick={() => handleAISummary('yesterday')}
+        className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+        disabled={isLoadingAI}
+      >
+        Yesterday
+      </button>
+      <button 
+        onClick={() => handleAISummary('lastWeek')}
+        className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+        disabled={isLoadingAI}
+      >
+        Last Week
+      </button>
+    </div>
+  </div>
+  <div className="flex items-center gap-4">
+    <button 
+      onClick={handleLogout}
+      className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+    >
+      Logout
+    </button>
+    <input 
+      type="date" 
+      value={date}
+      onChange={(e) => handleDateChange(e.target.value)}
+      className="p-2 rounded border focus:outline-none" 
+    />
+  </div>
+</div>
 
-        {/* AI Summary display */}
         {(isLoadingAI || aiSummary) && (
           <div className="mb-4 p-4 bg-gray-50 rounded-lg">
             {isLoadingAI ? (
@@ -240,7 +250,6 @@ export default function JournalPage() {
           </div>
         )}
 
-        {/* Collapsible textarea section */}
         <div className={`transition-all duration-300 ease-in-out ${
           isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
         }`}>
@@ -267,14 +276,13 @@ export default function JournalPage() {
           <TodoList />
         </div>
 
-        {/* Entry list */}
         <div className="mt-6 space-y-4">
           <button
             onClick={() => setShowEntries(!showEntries)}
             className="w-full p-4 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50 mb-4"
           >
             <div className="flex items-center justify-between">
-              <div className="flex-1" /> {/* Empty div for spacing */}
+              <div className="flex-1" />
               <div>Entries</div>
               <div className="flex-1 flex justify-end">
                 {showEntries ? (
@@ -287,19 +295,19 @@ export default function JournalPage() {
           </button>
 
           {showEntries && (
-  <div className="space-y-4">
-    {entries.slice(0, 7).map((entry) => (
-      <div 
-        key={entry.id} 
-        className="p-4 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors"
-        onClick={() => handleEntryClick(entry)}
-      >
-        <div className="flex items-center space-x-4 text-gray-500">
-          <div>{format(new Date(entry.date), 'dd/MM/yy')}</div>
-          <div className="truncate whitespace-nowrap overflow-hidden">{entry.content}</div>
-        </div>
-      </div>
-    ))}
+            <div className="space-y-4">
+              {entries.slice(0, 7).map((entry) => (
+                <div 
+                  key={entry.id} 
+                  className="p-4 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => handleEntryClick(entry)}
+                >
+                  <div className="flex items-center space-x-4 text-gray-500">
+                    <div>{format(new Date(entry.date), 'dd/MM/yy')}</div>
+                    <div className="truncate whitespace-nowrap overflow-hidden">{entry.content}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
